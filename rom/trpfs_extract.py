@@ -3,6 +3,8 @@ import os
 import struct
 import subprocess
 
+from util.HashTool import hashFnv1a_64str
+
 fs_magic = "ONEPACK"
 file_dir = "files"
 schema_dir = "schemas"
@@ -16,13 +18,9 @@ hash_dict = {}
 def FNV1a64(input_str):
     if input_str in hash_dict:
         return hash_dict[input_str]
-    fnv_prime = 1099511628211
-    offset_basis = 14695981039346656837
-    for i in input_str:
-        offset_basis ^= ord(i)
-        offset_basis = (offset_basis * fnv_prime) % (2**64)
-    hash_dict[input_str] = offset_basis
-    return offset_basis
+    
+    hash_dict[input_str] = hashFnv1a_64str(input_str)
+    return hash_dict[input_str]
 
 def ExtractFS():
     print("Extracting data from trpfs file...")
@@ -36,12 +34,12 @@ def ExtractFS():
         fs.seek(init_offset)
         fs_sep.write(fs.read(eof_offset - init_offset))
 
-    command = tool_dir + "\\flatc.exe --raw-binary -o info --strict-json --defaults-json -t schemas\\trpfs.fbs -- files\\fs_data_separated.trpfs"
+    command = "flatc --raw-binary -o info --strict-json --defaults-json -t schemas\\trpfs.fbs -- files\\fs_data_separated.trpfs"
     subprocess.call(command)
 
 def ExtractFD():
     print("Extracting data from trpfd file...")
-    command = tool_dir + "\\flatc.exe --raw-binary -o info --strict-json --defaults-json -t schemas\\trpfd.fbs -- files\\data.trpfd"
+    command = "flatc --raw-binary -o info --strict-json --defaults-json -t schemas\\trpfd.fbs -- files\\data.trpfd"
     subprocess.call(command)
     
     with open(info_dir + "\\names_original.txt", mode="r") as onames_file, open(info_dir + "\\names_changed.txt", mode="r") as cnames_file:
